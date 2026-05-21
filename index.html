@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SINUCA — Arte da Mesa</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #050505;
+    --surface: #0c0c0c;
+    --surface2: #111111;
+    --border: #1e1e1e;
+    --gold: #c9a84c;
+    --gold2: #e8c97a;
+    --green: #1a6b3a;
+    --green2: #2a9b55;
+    --text: #e8e0d0;
+    --muted: #6e6860;
+    --red: #c0392b;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ── Canvas ── */
+  #canvas-bg {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── Noise overlay ── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.4;
+  }
+
+  /* ── Layout ── */
+  #app { position: relative; z-index: 2; }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    position: relative;
+  }
+
+  .hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.3s ease forwards;
+  }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(6rem, 18vw, 16rem);
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+    background: linear-gradient(135deg, #fff 0%, var(--gold2) 40%, var(--gold) 70%, #6b4c1a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    opacity: 0;
+    animation: fadeUp 0.9s 0.5s ease forwards;
+    position: relative;
+  }
+
+  .hero-title::after {
+    content: 'SINUCA';
+    position: absolute;
+    inset: 0;
+    background: none;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 1px rgba(201,168,76,0.15);
+    transform: translate(4px, 4px);
+    z-index: -1;
+  }
+
+  .hero-sub {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
+    color: var(--muted);
+    margin-top: 1.5rem;
+    letter-spacing: 0.05em;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.8s ease forwards;
+  }
+
+  .hero-divider {
+    width: 80px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 2.5rem auto;
+    opacity: 0;
+    animation: fadeUp 0.8s 1s ease forwards;
+  }
+
+  .scroll-hint {
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+    opacity: 0;
+    animation: fadeUp 0.8s 1.3s ease forwards;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .scroll-hint::after {
+    content: '';
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--gold), transparent);
+    animation: scrollLine 1.5s 1.5s ease infinite;
+  }
+
+  @keyframes scrollLine {
+    0% { transform: scaleY(0); transform-origin: top; }
+    50% { transform: scaleY(1); transform-origin: top; }
+    51% { transform: scaleY(1); transform-origin: bottom; }
+    100% { transform: scaleY(0); transform-origin: bottom; }
+  }
+
+  /* ── SECTION ── */
+  .section {
+    padding: 6rem 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    line-height: 1;
+    color: var(--text);
+    margin-bottom: 3rem;
+  }
+
+  /* ── TABS ── */
+  .tabs-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.7);
+  }
+
+  .tabs-nav {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(0.95rem, 2vw, 1.3rem);
+    letter-spacing: 0.12em;
+    padding: 1.2rem 0.5rem;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.3s;
+    border-right: 1px solid var(--border);
+  }
+
+  .tab-btn:last-child { border-right: none; }
+
+  .tab-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--gold);
+    transform: scaleX(0);
+    transition: transform 0.35s cubic-bezier(.22,1,.36,1);
+  }
+
+  .tab-btn.active {
+    color: var(--gold2);
+  }
+
+  .tab-btn.active::after {
+    transform: scaleX(1);
+  }
+
+  .tab-btn:hover:not(.active) {
+    color: var(--text);
+  }
+
+  /* ── TAB PANELS ── */
+  .tab-panel {
+    display: none;
+    padding: 3rem 3.5rem;
+    animation: panelIn 0.4s ease;
+  }
+
+  .tab-panel.active { display: block; }
+
+  @keyframes panelIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── RULES LAYOUT ── */
+  .rules-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 2.5rem;
+    margin-bottom: 3rem;
+    flex-wrap: wrap;
+  }
+
+  .rules-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .rules-icon::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.15), transparent 60%);
+  }
+
+  .icon-parimpar { background: radial-gradient(135deg, #2c3e6b, #111); }
+  .icon-brasileira { background: radial-gradient(135deg, #1a4a2a, #0a1a0a); }
+  .icon-sixreds { background: radial-gradient(135deg, #5a1010, #1a0505); }
+
+  .rules-intro h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    letter-spacing: 0.05em;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+
+  .rules-intro p {
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    max-width: 500px;
+  }
+
+  .rules-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+
+  .rule-card {
+    background: var(--surface2);
+    padding: 1.8rem;
+    transition: background 0.2s;
+  }
+
+  .rule-card:hover { background: #161616; }
+
+  .rule-card-num {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    margin-bottom: 0.8rem;
+    display: block;
+  }
+
+  .rule-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+    color: var(--text);
+  }
+
+  .rule-card p {
+    font-size: 0.78rem;
+    line-height: 1.75;
+    color: #8a8070;
+  }
+
+  .rule-card.full { grid-column: 1 / -1; }
+
+  /* ── BALLS DISPLAY ── */
+  .balls-row {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    margin: 1.5rem 0;
+    align-items: center;
+  }
+
+  .ball {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    position: relative;
+    box-shadow: inset -4px -4px 10px rgba(0,0,0,0.5), inset 2px 2px 6px rgba(255,255,255,0.2), 0 4px 15px rgba(0,0,0,0.6);
+    flex-shrink: 0;
+  }
+
+  .ball::after {
+    content: '';
+    position: absolute;
+    top: 18%;
+    left: 20%;
+    width: 30%;
+    height: 20%;
+    background: radial-gradient(ellipse, rgba(255,255,255,0.7), transparent);
+    border-radius: 50%;
+    transform: rotate(-30deg);
+  }
+
+  .ball-white  { background: radial-gradient(circle at 35% 35%, #fff, #c0c0c0); }
+  .ball-yellow { background: radial-gradient(circle at 35% 35%, #f5e650, #b8a400); }
+  .ball-green  { background: radial-gradient(circle at 35% 35%, #50c850, #1a6020); }
+  .ball-brown  { background: radial-gradient(circle at 35% 35%, #9b6830, #5a3010); }
+  .ball-blue   { background: radial-gradient(circle at 35% 35%, #4080e0, #1030a0); }
+  .ball-pink   { background: radial-gradient(circle at 35% 35%, #f090c0, #c04080); }
+  .ball-black  { background: radial-gradient(circle at 35% 35%, #555, #111); }
+  .ball-red    { background: radial-gradient(circle at 35% 35%, #f04040, #900); }
+  .ball-orange { background: radial-gradient(circle at 35% 35%, #f08020, #a04000); }
+  .ball-purple { background: radial-gradient(circle at 35% 35%, #9050d0, #400080); }
+
+  .ball-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 0.3rem;
+  }
+
+  .ball-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+  }
+
+  /* ── SCORE TABLE ── */
+  .score-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    margin-top: 1.5rem;
+  }
+
+  .score-table th {
+    text-align: left;
+    padding: 0.7rem 1rem;
+    background: var(--bg);
+    color: var(--gold);
+    font-size: 0.62rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .score-table td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid #161616;
+    color: #9a9080;
+  }
+
+  .score-table tr:hover td { background: #0f0f0f; }
+
+  .pts { color: var(--gold2); font-weight: 600; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 3rem 2rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    position: relative;
+    z-index: 2;
+  }
+
+  footer span { color: var(--gold); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 700px) {
+    .tab-panel { padding: 2rem 1.5rem; }
+    .rules-grid { grid-template-columns: 1fr; }
+    .rules-header { gap: 1.2rem; }
+    .tabs-nav { flex-direction: column; }
+    .tab-btn { border-right: none; border-bottom: 1px solid var(--border); }
+    .tab-btn:last-child { border-bottom: none; }
+  }
+
+  /* ── SEPARATOR ── */
+  .gold-line {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--gold) 30%, var(--gold) 70%, transparent 100%);
+    margin: 0.5rem 0 2rem;
+    opacity: 0.4;
+  }
+
+  /* ── TAG ── */
+  .tag {
+    display: inline-block;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.7rem;
+    border: 1px solid var(--border);
+    color: var(--gold);
+    background: rgba(201,168,76,0.05);
+    margin-bottom: 1rem;
+  }
+
+  /* ── FLOATING ORBS (CSS) ── */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 1;
+    animation: orbFloat 20s ease-in-out infinite;
+  }
+
+  .orb1 { width: 500px; height: 500px; background: rgba(26,107,58,0.06); top: -100px; right: -100px; animation-delay: 0s; }
+  .orb2 { width: 400px; height: 400px; background: rgba(201,168,76,0.04); bottom: 20%; left: -100px; animation-delay: -7s; }
+  .orb3 { width: 300px; height: 300px; background: rgba(26,107,58,0.04); bottom: -50px; right: 30%; animation-delay: -13s; }
+
+  @keyframes orbFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    33% { transform: translateY(-30px) scale(1.05); }
+    66% { transform: translateY(20px) scale(0.97); }
+  }
+
+  /* ── THREE scene overlay ── */
+  .canvas-label {
+    position: absolute;
+    bottom: 3rem;
+    right: 3rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    color: rgba(201,168,76,0.3);
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="canvas-bg"></canvas>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<div id="app">
+
+  <!-- ── HERO ── -->
+  <section class="hero">
+    <p class="hero-eyebrow">&#9679; Arte da Mesa — Guia Oficial</p>
+    <h1 class="hero-title">SINUCA</h1>
+    <p class="hero-sub">Três modalidades. Uma mesa. Infinitas possibilidades.</p>
+    <div class="hero-divider"></div>
+    <div class="scroll-hint">Explore as regras</div>
+    <span class="canvas-label">Three.js ⬤ WebGL</span>
+  </section>
+
+  <!-- ── RULES SECTION ── -->
+  <section class="section">
+    <p class="section-label">&#9679; Modalidades</p>
+    <h2 class="section-title">Escolha sua<br/>modalidade</h2>
+
+    <div class="tabs-wrapper">
+      <!-- NAV -->
+      <nav class="tabs-nav">
+        <button class="tab-btn active" data-tab="parimpar">⚪ Par ou Ímpar</button>
+        <button class="tab-btn" data-tab="brasileira">🟡 Regra Brasileira</button>
+        <button class="tab-btn" data-tab="sixreds">🔴 Six Reds</button>
+      </nav>
+
+      <!-- PAR OU ÍMPAR -->
+      <div class="tab-panel active" id="tab-parimpar">
+        <div class="rules-header">
+          <div class="rules-icon icon-parimpar">⚪</div>
+          <div class="rules-intro">
+            <h2>Par ou Ímpar</h2>
+            <p>A modalidade mais popular nos bares e salões de todo o Brasil. Acessível, rápida e cheia de estratégia.</p>
+          </div>
+        </div>
+
+        <div class="balls-row">
+          <div class="ball-item"><div class="ball ball-white"></div><div class="ball-label">Branca</div></div>
+          <div class="ball-item"><div class="ball ball-red"></div><div class="ball-label">Vermelha</div></div>
+          <div class="ball-item"><div class="ball ball-red"></div><div class="ball-label"></div></div>
+          <div class="ball-item"><div class="ball ball-red"></div><div class="ball-label"></div></div>
+          <div class="ball-item"><div class="ball ball-red"></div><div class="ball-label"></div></div>
+          <div class="ball-item"><div class="ball ball-red"></div><div class="ball-label"></div></div>
+          <div class="ball-item"><div class="ball ball-red"></div><div class="ball-label"></div></div>
+          <div class="ball-item"><div class="ball ball-red"></div><div class="ball-label"></div></div>
+          <div class="ball-item"><div class="ball ball-red"></div><div class="ball-label"></div></div>
+          <div class="ball-item"><div class="ball ball-red"></div><div class="ball-label">×9</div></div>
+          <div class="ball-item"><div class="ball ball-black"></div><div class="ball-label">Preta</div></div>
+        </div>
+        <div class="gold-line"></div>
+
+        <div class="rules-grid">
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 01</span>
+            <h3>Objetivo</h3>
+            <p>Caçar todas as bolas do seu grupo (par ou ímpar) e depois enterrar a bola preta (8 ou negra) para vencer a partida.</p>
+          </div>
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 02</span>
+            <h3>Definição dos Grupos</h3>
+            <p>O primeiro jogador a caçar uma bola define seu grupo. Quem caçar primeiro define se ficará com as bolas pares (2, 4, 6, 8) ou ímpares (1, 3, 5, 7). O adversário pega o grupo restante.</p>
+          </div>
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 03</span>
+            <h3>Tacada Inicial (Break)</h3>
+            <p>O triangulo com 15 bolas vermelhas é montado no ponto do triângulo. O jogador que realizar o break deve tentar dispersar as bolas. Nenhum grupo é definido até que uma bola seja caçada legalmente.</p>
+          </div>
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 04</span>
+            <h3>Vez do Jogador</h3>
+            <p>O jogador continua jogando enquanto caçar bolas do seu grupo. Ao errar, falhar ou caçar bola adversária, passa a vez. A bola branca deve sempre acertar uma bola do próprio grupo primeiro.</p>
+          </div>
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 05</span>
+            <h3>Faltas</h3>
+            <p>Constituem falta: caçar a bola branca ("engolir"), não tocar em nenhuma bola, tocar primeiro em bola adversária, ou fazer bola do adversário. Na falta, o adversário joga de onde está ou coloca a bola branca onde quiser.</p>
+          </div>
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 06</span>
+            <h3>Bola Preta (Negra)</h3>
+            <p>Somente após caçar todas as bolas do grupo o jogador pode atacar a preta. Caçar a preta antes de terminar o grupo = derrota imediata. Engolir a branca junto com a preta = derrota imediata.</p>
+          </div>
+          <div class="rule-card full">
+            <span class="rule-card-num">— REGRA 07</span>
+            <h3>Variantes Regionais</h3>
+            <p>Em algumas regiões do Brasil, é comum jogar sem grupos definidos (livre), onde qualquer bola vermelha pode ser caçada a qualquer momento. Outra variante permite bola livre após falta, onde o próximo jogador pode colocar a branca em qualquer posição da mesa. Sempre confirme as regras locais antes de começar.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- REGRA BRASILEIRA -->
+      <div class="tab-panel" id="tab-brasileira">
+        <div class="rules-header">
+          <div class="rules-icon icon-brasileira">🟡</div>
+          <div class="rules-intro">
+            <h2>Regra Brasileira</h2>
+            <p>Também conhecida como Sinuca de 7 Bolas — a modalidade oficial dos campeonatos nacionais brasileiros.</p>
+          </div>
+        </div>
+
+        <div class="balls-row">
+          <div class="ball-item"><div class="ball ball-white"></div><div class="ball-label">Branca</div></div>
+          <div class="ball-item"><div class="ball ball-yellow"></div><div class="ball-label">1 — Amarela</div></div>
+          <div class="ball-item"><div class="ball ball-red"></div><div class="ball-label">2 — Vermelha</div></div>
+          <div class="ball-item"><div class="ball ball-orange"></div><div class="ball-label">3 — Laranja</div></div>
+          <div class="ball-item"><div class="ball ball-purple"></div><div class="ball-label">4 — Roxa</div></div>
+          <div class="ball-item"><div class="ball ball-blue"></div><div class="ball-label">5 — Azul</div></div>
+          <div class="ball-item"><div class="ball ball-green"></div><div class="ball-label">6 — Verde</div></div>
+          <div class="ball-item"><div class="ball ball-black"></div><div class="ball-label">7 — Preta</div></div>
+        </div>
+        <div class="gold-line"></div>
+
+        <div class="rules-grid">
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 01</span>
+            <h3>Objetivo</h3>
+            <p>Fazer o maior número de pontos caçando as bolas na ordem numérica crescente: 1, 2, 3, 4, 5, 6, 7. Vence quem somar mais pontos ao término do frame.</p>
+          </div>
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 02</span>
+            <h3>Pontuação</h3>
+            <p>Cada bola vale o seu número: amarela = 1 ponto, vermelha = 2, laranja = 3, roxa = 4, azul = 5, verde = 6 e preta = 7 pontos. Pontuação máxima do frame: 28 pontos.</p>
+          </div>
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 03</span>
+            <h3>Sequência Obrigatória</h3>
+            <p>O jogador obrigatoriamente deve tentar caçar a bola de menor número que ainda estiver na mesa. Não é permitido atacar uma bola de número maior antes de eliminar as anteriores.</p>
+          </div>
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 04</span>
+            <h3>Continuidade</h3>
+            <p>Se o jogador caçar a bola correta, continua jogando e tenta a próxima na sequência. Se errar ou cometer falta, passa a vez sem pontuar pela jogada atual.</p>
+          </div>
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 05</span>
+            <h3>Faltas e Penalidades</h3>
+            <p>Falta: engolir a branca, não tocar na bola obrigatória, tocar em bola de numeração errada. Penalidade: o adversário ganha os pontos da bola que devia ser atacada, e a branca vai para o pé da mesa (área D) ou posição de bola livre.</p>
+          </div>
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 06</span>
+            <h3>Reposição de Bolas</h3>
+            <p>Bolas caçadas fora de ordem são recolocadas no ponto do triângulo (ou no ponto mais próximo disponível). Somente bolas caçadas na sequência correta saem definitivamente de jogo.</p>
+          </div>
+          <div class="rule-card full">
+            <span class="rule-card-num">— REGRA 07</span>
+            <h3>Formato de Competição</h3>
+            <p>Em torneios, a partida é disputada em frames (séries). Cada frame começa com todas as 7 bolas posicionadas. O vencedor de cada frame é quem fizer mais pontos. A partida pode ser melhor de 3, 5 ou 7 frames conforme o regulamento. O rack é montado com a amarela no vértice frontal, as demais em ordem crescente da esquerda para a direita e da frente para trás.</p>
+          </div>
+        </div>
+
+        <table class="score-table">
+          <thead>
+            <tr>
+              <th>Bola</th>
+              <th>Cor</th>
+              <th>Pontos</th>
+              <th>Posição no Rack</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1ª</td><td>Amarela</td><td class="pts">1 pt</td><td>Vértice frontal</td></tr>
+            <tr><td>2ª</td><td>Vermelha</td><td class="pts">2 pts</td><td>Esq. 2ª fileira</td></tr>
+            <tr><td>3ª</td><td>Laranja</td><td class="pts">3 pts</td><td>Dir. 2ª fileira</td></tr>
+            <tr><td>4ª</td><td>Roxa</td><td class="pts">4 pts</td><td>Esq. 3ª fileira</td></tr>
+            <tr><td>5ª</td><td>Azul</td><td class="pts">5 pts</td><td>Centro 3ª fileira</td></tr>
+            <tr><td>6ª</td><td>Verde</td><td class="pts">6 pts</td><td>Dir. 3ª fileira</td></tr>
+            <tr><td>7ª</td><td>Preta</td><td class="pts">7 pts</td><td>Vértice traseiro</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- SIX REDS -->
+      <div class="tab-panel" id="tab-sixreds">
+        <div class="rules-header">
+          <div class="rules-icon icon-sixreds">🔴</div>
+          <div class="rules-intro">
+            <h2>Six Reds</h2>
+            <p>Versão compacta e veloz do Snooker inglês, disputada com apenas 6 bolas vermelhas. Ideal para competições rápidas.</p>
+          </div>
+        </div>
+
+        <div class="balls-row">
+          <div class="ball-item"><div class="ball ball-white"></div><div class="ball-label">Branca</div></div>
+          <div class="ball-item"><div class="ball ball-red"></div><div class="ball-label">×6 Vermelhas</div></div>
+          <div class="ball-item"><div class="ball ball-yellow"></div><div class="ball-label">Amarela — 2</div></div>
+          <div class="ball-item"><div class="ball ball-green"></div><div class="ball-label">Verde — 3</div></div>
+          <div class="ball-item"><div class="ball ball-brown"></div><div class="ball-label">Marrom — 4</div></div>
+          <div class="ball-item"><div class="ball ball-blue"></div><div class="ball-label">Azul — 5</div></div>
+          <div class="ball-item"><div class="ball ball-pink"></div><div class="ball-label">Rosa — 6</div></div>
+          <div class="ball-item"><div class="ball ball-black"></div><div class="ball-label">Preta — 7</div></div>
+        </div>
+        <div class="gold-line"></div>
+
+        <div class="rules-grid">
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 01</span>
+            <h3>Conceito</h3>
+            <p>Six Reds é uma variante oficial do Snooker reconhecida pela WPBSA. Usa 6 bolas vermelhas (em vez de 15) mais as 6 bolas coloridas + branca. A partida é muito mais rápida mantendo toda a essência do Snooker.</p>
+          </div>
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 02</span>
+            <h3>Pontuação das Bolas</h3>
+            <p>Vermelhas valem 1 ponto cada. Coloridas: amarela = 2, verde = 3, marrom = 4, azul = 5, rosa = 6, preta = 7. Pontuação máxima teórica de um frame: 6×(1+7) + 2+3+4+5+6+7 = 75 pontos.</p>
+          </div>
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 03</span>
+            <h3>Sequência de Jogo</h3>
+            <p>Alternância obrigatória: o jogador deve primeiro caçar uma bola vermelha, depois uma colorida, depois vermelha novamente. Enquanto existirem vermelhas na mesa, as coloridas são repostas após serem caçadas.</p>
+          </div>
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 04</span>
+            <h3>Fase Final (Colours)</h3>
+            <p>Após todas as 6 vermelhas serem eliminadas, as bolas coloridas devem ser caçadas em ordem crescente de valor: amarela → verde → marrom → azul → rosa → preta. Nessa fase, as bolas não são repostas.</p>
+          </div>
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 05</span>
+            <h3>Faltas</h3>
+            <p>Falta mínima: 4 pontos. Engolir a branca ou tocar a bola errada: penalidade igual ao valor da bola atacada ou 4 pontos (o que for maior). Na falta, o adversário pode solicitar que o infrator jogue novamente.</p>
+          </div>
+          <div class="rule-card">
+            <span class="rule-card-num">— REGRA 06</span>
+            <h3>Posicionamento Inicial</h3>
+            <p>As 6 vermelhas formam um triângulo menor no ponto do triângulo. As coloridas ficam em seus pontos fixos na mesa: amarela e verde no baulk, marrom no centro, azul no meio da mesa, rosa próxima ao triângulo e preta no fundo.</p>
+          </div>
+          <div class="rule-card full">
+            <span class="rule-card-num">— REGRA 07</span>
+            <h3>Diferenças para o Snooker Tradicional</h3>
+            <p>Além das 6 vermelhas (vs 15), o Six Reds tem frames mais curtos (média de 15–20 min), é mais utilizado em competições de formato acelerado, transmissões ao vivo e torneios menores. A estratégia muda pois cada vermelha perdida tem impacto maior. Snookers e safeties são igualmente válidos e importantes para a dinâmica do jogo.</p>
+          </div>
+        </div>
+
+        <table class="score-table">
+          <thead>
+            <tr>
+              <th>Bola</th>
+              <th>Fase</th>
+              <th>Pontos</th>
+              <th>Reposta após caçar?</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Vermelha (×6)</td><td>Abertura</td><td class="pts">1 pt cada</td><td>Não</td></tr>
+            <tr><td>Amarela</td><td>Colours</td><td class="pts">2 pts</td><td>Sim (durante vermelhas)</td></tr>
+            <tr><td>Verde</td><td>Colours</td><td class="pts">3 pts</td><td>Sim (durante vermelhas)</td></tr>
+            <tr><td>Marrom</td><td>Colours</td><td class="pts">4 pts</td><td>Sim (durante vermelhas)</td></tr>
+            <tr><td>Azul</td><td>Colours</td><td class="pts">5 pts</td><td>Sim (durante vermelhas)</td></tr>
+            <tr><td>Rosa</td><td>Colours</td><td class="pts">6 pts</td><td>Sim (durante vermelhas)</td></tr>
+            <tr><td>Preta</td><td>Colours / Final</td><td class="pts">7 pts</td><td>Sim (durante vermelhas)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- /tabs-wrapper -->
+  </section>
+
+  <footer>
+    <p>SINUCA — Arte da Mesa &nbsp;|&nbsp; <span>Guia de Modalidades</span> &nbsp;|&nbsp; Feito com paixão pelo jogo</p>
+  </footer>
+
+</div><!-- /app -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ──────────────────────────────────────────────
+//  THREE.JS — Bolas flutuando no fundo
+// ──────────────────────────────────────────────
+(function(){
+  const canvas = document.getElementById('canvas-bg');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x000000, 0);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+  camera.position.z = 40;
+
+  // Lights
+  const ambient = new THREE.AmbientLight(0xffffff, 0.3);
+  scene.add(ambient);
+
+  const pointLight1 = new THREE.PointLight(0xc9a84c, 2, 100);
+  pointLight1.position.set(20, 30, 20);
+  scene.add(pointLight1);
+
+  const pointLight2 = new THREE.PointLight(0x1a6b3a, 1.5, 80);
+  pointLight2.position.set(-25, -20, 15);
+  scene.add(pointLight2);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+  dirLight.position.set(5, 10, 10);
+  scene.add(dirLight);
+
+  // Ball colors
+  const BALL_COLORS = [
+    0xffffff, // white
+    0xf5e650, // yellow
+    0xf04040, // red
+    0xf08020, // orange
+    0x9050d0, // purple
+    0x4080e0, // blue
+    0x50c850, // green
+    0x222222, // black
+    0xf090c0, // pink
+    0x8b4513, // brown
+  ];
+
+  const balls = [];
+  const BALL_COUNT = 22;
+
+  for(let i = 0; i < BALL_COUNT; i++){
+    const radius = Math.random() * 1.2 + 0.5;
+    const geo = new THREE.SphereGeometry(radius, 32, 32);
+    const color = BALL_COLORS[i % BALL_COLORS.length];
+
+    const mat = new THREE.MeshPhongMaterial({
+      color,
+      specular: 0xffffff,
+      shininess: 120,
+      transparent: true,
+      opacity: Math.random() * 0.25 + 0.12,
+    });
+
+    const mesh = new THREE.Mesh(geo, mat);
+
+    // Spread them in a wide volume
+    mesh.position.set(
+      (Math.random() - 0.5) * 80,
+      (Math.random() - 0.5) * 60,
+      (Math.random() - 0.5) * 30 - 5
+    );
+
+    // Random rotation
+    mesh.rotation.set(
+      Math.random() * Math.PI,
+      Math.random() * Math.PI,
+      Math.random() * Math.PI
+    );
+
+    const speed = {
+      x: (Math.random() - 0.5) * 0.008,
+      y: (Math.random() - 0.5) * 0.006,
+      z: (Math.random() - 0.5) * 0.004,
+      rx: (Math.random() - 0.5) * 0.006,
+      ry: (Math.random() - 0.5) * 0.008,
+      offset: Math.random() * Math.PI * 2,
+    };
+
+    scene.add(mesh);
+    balls.push({ mesh, speed, radius });
+  }
+
+  // Table cloth plane (subtle green)
+  const planeGeo = new THREE.PlaneGeometry(120, 80);
+  const planeMat = new THREE.MeshLambertMaterial({
+    color: 0x0a2a14,
+    transparent: true,
+    opacity: 0.06,
+  });
+  const plane = new THREE.Mesh(planeGeo, planeMat);
+  plane.position.z = -20;
+  scene.add(plane);
+
+  // Particles (chalk dust)
+  const particleCount = 300;
+  const pPositions = new Float32Array(particleCount * 3);
+  for(let i = 0; i < particleCount; i++){
+    pPositions[i * 3]     = (Math.random() - 0.5) * 100;
+    pPositions[i * 3 + 1] = (Math.random() - 0.5) * 80;
+    pPositions[i * 3 + 2] = (Math.random() - 0.5) * 40 - 5;
+  }
+  const pGeo = new THREE.BufferGeometry();
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+  const pMat = new THREE.PointsMaterial({
+    color: 0xc9a84c,
+    size: 0.15,
+    transparent: true,
+    opacity: 0.25,
+  });
+  const particles = new THREE.Points(pGeo, pMat);
+  scene.add(particles);
+
+  // Mouse parallax
+  let mouseX = 0, mouseY = 0;
+  document.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+    mouseY = -(e.clientY / window.innerHeight - 0.5) * 2;
+  });
+
+  // Resize
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // Scroll
+  let scrollY = 0;
+  window.addEventListener('scroll', () => { scrollY = window.scrollY; });
+
+  // Animate
+  let t = 0;
+  function animate(){
+    requestAnimationFrame(animate);
+    t += 0.01;
+
+    balls.forEach(({ mesh, speed }) => {
+      mesh.position.x += speed.x;
+      mesh.position.y += speed.y + Math.sin(t + speed.offset) * 0.003;
+      mesh.position.z += speed.z;
+      mesh.rotation.x += speed.rx;
+      mesh.rotation.y += speed.ry;
+
+      // Wrap around
+      if(mesh.position.x > 50)  mesh.position.x = -50;
+      if(mesh.position.x < -50) mesh.position.x = 50;
+      if(mesh.position.y > 40)  mesh.position.y = -40;
+      if(mesh.position.y < -40) mesh.position.y = 40;
+    });
+
+    // Camera parallax + scroll drift
+    camera.position.x += (mouseX * 3 - camera.position.x) * 0.04;
+    camera.position.y += (mouseY * 2 - camera.position.y) * 0.04;
+    camera.position.z = 40 + scrollY * 0.01;
+
+    particles.rotation.y = t * 0.02;
+
+    pointLight1.position.set(
+      20 + Math.sin(t * 0.4) * 10,
+      30 + Math.cos(t * 0.3) * 8,
+      20
+    );
+
+    renderer.render(scene, camera);
+  }
+  animate();
+})();
+
+// ──────────────────────────────────────────────
+//  TABS
+// ──────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + target).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
